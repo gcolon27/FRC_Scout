@@ -30,13 +30,13 @@
         button { padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
         .btn-inc { background: #00802b; font-size: 1.2em; }
         .btn-dec { background: #cc0000; font-size: 1.2em; }
-        
+
         /* Interactive number display/input styling */
-        input.disp { 
-            background: #333; 
-            color: white; 
-            font-size: 1.5em; 
-            text-align: center; 
+        input.disp {
+            background: #333;
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
             margin: 0;
             padding: 0;
             border: 1px solid #555;
@@ -45,7 +45,7 @@
             height: 100%;
             -moz-appearance: textfield; /* Hides arrows in Firefox */
         }
-        
+
         /* Hides arrows in Chrome/Edge/Safari */
         input.disp::-webkit-outer-spin-button,
         input.disp::-webkit-inner-spin-button {
@@ -130,7 +130,8 @@
 
     <div class="section">
         <h3>Notes</h3>
-        <textarea id="notes" rows="3" placeholder="Strategy, speed, driver skill..."></textarea>
+        <textarea id="notes" rows="3" maxlength="100" placeholder="Strategy, speed, driver skill..." oninput="updateCharCount()"></textarea>
+        <div id="charCount" style="text-align: right; font-size: 0.85em; color: #aaa; margin-top: -5px; margin-bottom: 5px;">0 / 100</div>
     </div>
 
     <button class="btn-gen" onclick="generate()">Generate QR Code</button>
@@ -152,6 +153,11 @@
         function saveScoutName() {
             let name = document.getElementById('scout').value;
             localStorage.setItem('frc_scout_name', name);
+        }
+
+        function updateCharCount() {
+            let len = document.getElementById('notes').value.length;
+            document.getElementById('charCount').innerText = len + " / 100";
         }
 
         let data = {
@@ -227,6 +233,7 @@
             document.getElementById('match').value = '';
             document.getElementById('team').value = '';
             document.getElementById('notes').value = '';
+            document.getElementById('charCount').innerText = '0 / 100';
             // Reset Data
             data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'None', defense: false, broke: false };
             // Reset UI
