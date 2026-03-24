@@ -1,5 +1,5 @@
 """
-FRC 2026 MASTER SERVER (OFFLINE MODE)
+FRC 2026 MASTER SERVER
 1. Ensure 'html5-qrcode.min.js' is in this folder.
 2. Install dependencies: pip install flask pandas odfpy
 3. Run this script.
@@ -8,6 +8,7 @@ FRC 2026 MASTER SERVER (OFFLINE MODE)
 import sqlite3
 import json
 import os
+import logging
 import pandas as pd
 from io import BytesIO
 from datetime import datetime, timezone
@@ -15,6 +16,10 @@ from flask import Flask, render_template_string, request, jsonify, Response, sen
 
 app = Flask(__name__)
 DB_FILE = 'frc_scouting.db'
+
+# --- SILENCE FLASK LOGGING ---
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -233,7 +238,6 @@ def submit():
     try:
         data = request.json
         
-        # Generate UTC timestamp in 24-hour format (YYYY-MM-DD HH:MM:SS)
         utc_now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         data['scan_time_utc'] = utc_now
 
@@ -252,8 +256,14 @@ def submit():
         ))
         conn.commit()
         conn.close()
+        
+        # --- CUSTOM TERMINAL LOG ---
+        scout_name = data.get('scoutName', 'Unknown')
+        print(f"✅ {scout_name} submitted a scan at {utc_now}")
+        
         return jsonify({'success': True, 'timestamp': utc_now})
     except Exception as e:
+        print(f"❌ SERVER ERROR: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/delete/<int:match_id>', methods=['POST'])
@@ -273,7 +283,6 @@ def export_ods():
     rows = c.fetchall()
     conn.close()
 
-    # Parse JSON data into a list of dictionaries
     parsed_data = []
     for r in rows:
         d = json.loads(r[0])
@@ -292,17 +301,12 @@ def export_ods():
             'Notes': d.get('notes')
         })
 
-    # Create a Pandas DataFrame
     df = pd.DataFrame(parsed_data)
-
-    # Write the DataFrame to an in-memory BytesIO buffer as an ODS file
     output = BytesIO()
     with pd.ExcelWriter(output, engine='odf') as writer:
         df.to_excel(writer, index=False)
     
     output.seek(0)
-
-    # Return the file as a downloadable attachment
     return Response(
         output.getvalue(),
         mimetype="application/vnd.oasis.opendocument.spreadsheet",
@@ -311,7 +315,15 @@ def export_ods():
 
 if __name__ == '__main__':
     init_db()
-    print("🚀 SERVER RUNNING (Offline Mode)")
-    print("Ensure 'html5-qrcode.min.js' is in this folder.")
-    print("Go to: http://localhost:5000")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    
+    # Safe way to suppress the Flask development banner
+    import flask.cli
+    flask.cli.show_server_banner = lambda *args: None
+    
+    print("\n" + "="*50)
+    print("🔗 Scanner Interface: http://localhost:5000")
+    print("🛑 Press CTRL+C to quit")
+    print("="*50 + "\n")
+    
+    # Debug=False stops the reloader and debugger spam
+    app.run(host='0.0.0.0', port=5000, debug=False)
