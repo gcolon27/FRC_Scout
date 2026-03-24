@@ -5,14 +5,45 @@ FRC 2026 MASTER SERVER
 3. Run this script.
 4. Access http://localhost:5000
 """
+import sys
+import os
+
+# ==========================================================
+# PRE-FLIGHT CHECK 1: Python Dependencies
+# ==========================================================
+missing_modules = []
+try:
+    import flask
+except ImportError:
+    missing_modules.append('flask')
+
+try:
+    import pandas
+except ImportError:
+    missing_modules.append('pandas')
+
+try:
+    import odf # This is the internal name for odfpy
+except ImportError:
+    missing_modules.append('odfpy')
+
+if missing_modules:
+    print("\n" + "!"*55)
+    print("🛑 SERVER STARTUP FAILED: Missing Python Packages")
+    print("!"*55)
+    print("Please install the required dependencies by running this command in your terminal:\n")
+    print(f"👉  pip install {' '.join(missing_modules)}\n")
+    sys.exit(1)
+
+# --- Safe to import everything else now ---
 import sqlite3
 import json
-import os
 import logging
 import pandas as pd
 from io import BytesIO
 from datetime import datetime, timezone
 from flask import Flask, render_template_string, request, jsonify, Response, send_file
+import flask.cli
 
 app = Flask(__name__)
 DB_FILE = 'frc_scouting.db'
@@ -20,6 +51,7 @@ DB_FILE = 'frc_scouting.db'
 # --- SILENCE FLASK LOGGING ---
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
+flask.cli.show_server_banner = lambda *args: None
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -314,16 +346,23 @@ def export_ods():
     )
 
 if __name__ == '__main__':
+    # ==========================================================
+    # PRE-FLIGHT CHECK 2: Scanner Javascript File
+    # ==========================================================
+    if not os.path.exists('html5-qrcode.min.js'):
+        print("\n" + "!"*55)
+        print("🛑 SERVER STARTUP FAILED: Missing Scanner File")
+        print("!"*55)
+        print("The scanner requires 'html5-qrcode.min.js' to function.")
+        print("👉 Please download it and place it in the SAME folder as this script.\n")
+        sys.exit(1)
+
+    # Initialize the database and boot the server
     init_db()
-    
-    # Safe way to suppress the Flask development banner
-    import flask.cli
-    flask.cli.show_server_banner = lambda *args: None
     
     print("\n" + "="*50)
     print("🔗 Scanner Interface: http://localhost:5000")
     print("🛑 Press CTRL+C to quit")
     print("="*50 + "\n")
     
-    # Debug=False stops the reloader and debugger spam
     app.run(host='0.0.0.0', port=5000, debug=False)
