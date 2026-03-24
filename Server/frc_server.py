@@ -2,8 +2,8 @@
 FRC 2026 MASTER SERVER
 1. Ensure 'html5-qrcode.min.js' is in this folder.
 2. Install dependencies: pip install flask pandas odfpy
-3. Run this script.
-4. Access http://localhost:5000
+3. Run this script (works on Mac & Linux).
+4. Access http://localhost:8000
 """
 import sys
 import os
@@ -361,8 +361,9 @@ if __name__ == '__main__':
     init_db()
     
     print("\n" + "="*50)
-    print("🔗 Scanner Interface: http://localhost:5000")
+    print("🔗 Scanner Interface: http://localhost:8000")
     print("🛑 Press CTRL+C to quit")
     print("="*50 + "\n")
     
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # Port changed to 8000 here to avoid macOS AirPlay conflict
+    app.run(host='0.0.0.0', port=8000, debug=False)
