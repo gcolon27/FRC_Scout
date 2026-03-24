@@ -1,14 +1,16 @@
 """
 FRC 2026 MASTER SERVER (OFFLINE MODE)
 1. Ensure 'html5-qrcode.min.js' is in this folder.
-2. Run this script.
-3. Access http://localhost:5000
+2. Install dependencies: pip install flask pandas odfpy
+3. Run this script.
+4. Access http://localhost:5000
 """
 import sqlite3
 import json
-import csv
 import os
-from io import StringIO
+import pandas as pd
+from io import BytesIO
+from datetime import datetime, timezone
 from flask import Flask, render_template_string, request, jsonify, Response, send_file
 
 app = Flask(__name__)
@@ -24,6 +26,7 @@ def init_db():
             team_number INTEGER,
             scout_name TEXT,
             data_json TEXT,
+            scan_time TEXT,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(match_number, team_number)
         )
@@ -32,7 +35,6 @@ def init_db():
     conn.close()
 
 # --- SCANNER INTERFACE (OFFLINE) ---
-# Note: src="/html5-qrcode.min.js" points to the local route below
 SCANNER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -138,7 +140,7 @@ DASHBOARD_HTML = """
         table { width: 100%; border-collapse: collapse; background: #2a2a2a; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; }
         th { background: #333; color: #00ccff; }
-        .btn-csv { background: #00a854; color: white; padding: 10px; text-decoration: none; border-radius: 5px; display:inline-block; margin-bottom:20px;}
+        .btn-ods { background: #00a854; color: white; padding: 10px; text-decoration: none; border-radius: 5px; display:inline-block; margin-bottom:20px;}
         .btn-del { background: #ff3333; color: white; border: none; padding: 5px; cursor: pointer; }
     </style>
 </head>
@@ -148,11 +150,12 @@ DASHBOARD_HTML = """
         <a href="/view">📊 View Data</a>
     </div>
 
-    <a href="/api/export_csv" class="btn-csv">📥 Download CSV (Excel)</a>
+    <a href="/api/export_ods" class="btn-ods">📥 Download ODS (Spreadsheet)</a>
 
     <table>
         <thead>
             <tr>
+                <th>Scan Time (UTC)</th>
                 <th>Match</th>
                 <th>Team</th>
                 <th>Scout</th>
@@ -167,6 +170,7 @@ DASHBOARD_HTML = """
         <tbody>
             {% for r in matches %}
             <tr>
+                <td>{{ r.scan_time_utc }}</td>
                 <td>{{ r.matchNumber }}</td>
                 <td>{{ r.teamNumber }}</td>
                 <td>{{ r.scoutName }}</td>
@@ -197,7 +201,6 @@ DASHBOARD_HTML = """
 def home():
     return render_template_string(SCANNER_HTML)
 
-# OFFLINE ROUTE: Serves the JS file from the local disk
 @app.route('/html5-qrcode.min.js')
 def serve_js():
     try:
@@ -218,6 +221,8 @@ def view_data():
         try:
             d = json.loads(r[1])
             d['id'] = r[0]
+            if 'scan_time_utc' not in d:
+                d['scan_time_utc'] = 'N/A'
             clean_data.append(d)
         except: pass
 
@@ -227,16 +232,27 @@ def view_data():
 def submit():
     try:
         data = request.json
+        
+        # Generate UTC timestamp in 24-hour format (YYYY-MM-DD HH:MM:SS)
+        utc_now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        data['scan_time_utc'] = utc_now
+
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute('''
             INSERT OR REPLACE INTO matches
-            (match_number, team_number, scout_name, data_json)
-            VALUES (?, ?, ?, ?)
-        ''', (data['matchNumber'], data['teamNumber'], data['scoutName'], json.dumps(data)))
+            (match_number, team_number, scout_name, data_json, scan_time)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            data['matchNumber'], 
+            data['teamNumber'], 
+            data['scoutName'], 
+            json.dumps(data),
+            utc_now
+        ))
         conn.commit()
         conn.close()
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'timestamp': utc_now})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -249,30 +265,49 @@ def delete_match(match_id):
     conn.close()
     return jsonify({'success': True})
 
-@app.route('/api/export_csv')
-def export_csv():
+@app.route('/api/export_ods')
+def export_ods():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT data_json FROM matches ORDER BY match_number")
     rows = c.fetchall()
     conn.close()
 
-    si = StringIO()
-    writer = csv.writer(si)
-
-    writer.writerow(['Match', 'Team', 'Scout', 'Auto Balls', 'Auto Climb', 'Teleop Balls', 'Endgame Climb', 'Outcome', 'Defense', 'Robot Broke', 'Notes'])
-
+    # Parse JSON data into a list of dictionaries
+    parsed_data = []
     for r in rows:
         d = json.loads(r[0])
-        writer.writerow([
-            d.get('matchNumber'), d.get('teamNumber'), d.get('scoutName'),
-            d.get('autoBalls'), d.get('autoClimb'),
-            d.get('teleBalls'),
-            d.get('endClimb'), d.get('outcome'),
-            d.get('defense'), d.get('broken'), d.get('notes')
-        ])
+        parsed_data.append({
+            'Scan Time (UTC)': d.get('scan_time_utc', 'N/A'),
+            'Match': d.get('matchNumber'),
+            'Team': d.get('teamNumber'),
+            'Scout': d.get('scoutName'),
+            'Auto Balls': d.get('autoBalls'),
+            'Auto Climb': d.get('autoClimb'),
+            'Teleop Balls': d.get('teleBalls'),
+            'Endgame Climb': d.get('endClimb'),
+            'Outcome': d.get('outcome'),
+            'Defense': d.get('defense'),
+            'Robot Broke': d.get('broken'),
+            'Notes': d.get('notes')
+        })
 
-    return Response(si.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=frc_data.csv"})
+    # Create a Pandas DataFrame
+    df = pd.DataFrame(parsed_data)
+
+    # Write the DataFrame to an in-memory BytesIO buffer as an ODS file
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='odf') as writer:
+        df.to_excel(writer, index=False)
+    
+    output.seek(0)
+
+    # Return the file as a downloadable attachment
+    return Response(
+        output.getvalue(),
+        mimetype="application/vnd.oasis.opendocument.spreadsheet",
+        headers={"Content-disposition": "attachment; filename=frc_data.ods"}
+    )
 
 if __name__ == '__main__':
     init_db()
