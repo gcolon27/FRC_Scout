@@ -3,53 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FRC 2026 Scout (Navy & Gold)</title>
+    <title>FRC Scout Client</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* Base Background and Text */
+        /* Catppuccin Mocha Palette */
+        :root {
+            --base: #1e1e2e;
+            --mantle: #181825;
+            --crust: #11111b;
+            --text: #cdd6f4;
+            --subtext0: #a6adc8;
+            --surface0: #313244;
+            --blue: #89b4fa;
+            --yellow: #f9e2af;
+            --red: #f38ba8;
+            --green: #a6e3a1;
+        }
+
         body, html {
-            background-color: #000000 !important; /* Deep black background */
-            color: #ffffff !important; /* Force white text everywhere */
+            background-color: var(--base) !important;
+            color: var(--text) !important;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 10px;
         }
 
-        /* All Headers in Gold */
-        h1, h2, h3, h4, h5, h6 {
-            color: #FFD700 !important; 
+        h1, h2, h3, h4 {
+            color: var(--blue) !important; 
             text-align: center;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-top: 5px;
         }
 
-        /* Target all container sections (Navy Blue with Gold Borders) */
         .section {
-            background-color: #0A192F !important; /* Deep Navy Blue */
-            border: 2px solid #FFD700 !important; /* Gold Border */
+            background-color: var(--mantle) !important;
+            border: 2px solid var(--surface0) !important;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.15);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
 
-        /* Labels and small text */
         label, span, p {
             font-weight: bold;
-            color: #FFD700 !important; /* Gold labels */
+            color: var(--blue) !important;
             display: block;
             margin-bottom: 5px;
         }
 
-        /* Inputs, Textareas, and Dropdowns */
         input[type="number"], input[type="text"], textarea, select {
             width: 100%;
-            background-color: #001F3F !important; /* Lighter Navy for inputs */
-            color: #ffffff !important; /* White typing text */
-            border: 1px solid #FFD700 !important;
+            background-color: var(--surface0) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--subtext0) !important;
             padding: 12px;
             border-radius: 6px;
             box-sizing: border-box;
@@ -59,11 +68,11 @@
         
         input:focus, textarea:focus, select:focus {
             outline: none;
-            box-shadow: 0 0 8px #FFD700;
-            background-color: #0A192F !important;
+            border-color: var(--blue) !important;
+            box-shadow: 0 0 5px var(--blue);
+            background-color: var(--mantle) !important;
         }
 
-        /* Button Groups */
         .btn-group {
             display: flex;
             gap: 10px;
@@ -71,41 +80,38 @@
             margin-bottom: 15px;
         }
 
-        /* All Buttons (Default: Navy with Gold Text) */
         button, .toggle-btn, .counter-btn {
-            background-color: #001F3F !important; 
-            color: #FFD700 !important; 
-            border: 2px solid #FFD700 !important; 
+            background-color: var(--surface0) !important; 
+            color: var(--blue) !important; 
+            border: 2px solid var(--blue) !important; 
             padding: 12px 20px;
             font-size: 1.1rem;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            transition: 0.3s ease-in-out;
+            transition: 0.2s ease-in-out;
             flex: 1;
             min-width: 80px;
             text-align: center;
         }
 
-        /* Hover effect for buttons */
         button:hover, .toggle-btn:hover, .counter-btn:hover {
-            background-color: #FFD700 !important; /* Flips to Gold Background */
-            color: #000000 !important; /* Flips to Black Text */
+            background-color: var(--blue) !important;
+            color: var(--base) !important;
         }
 
-        /* Active/Toggled State for your custom toggle buttons */
         .active {
-            background-color: #FFD700 !important;
-            color: #000000 !important;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            background-color: var(--blue) !important;
+            color: var(--base) !important;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
         }
 
-        /* Plus/Minus Counter UI */
+        /* Specialized Counter UI */
         .counter-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 15px;
         }
         .counter-btn {
@@ -119,15 +125,21 @@
             flex: none;
             padding: 0;
         }
-        .counter-display {
-            font-size: 1.8rem;
-            font-weight: bold;
-            width: 40px;
+        .counter-input {
+            width: 80px !important;
             text-align: center;
-            color: #ffffff !important;
+            font-size: 1.5rem !important;
+            font-weight: bold;
+            margin-bottom: 0 !important;
+            padding: 8px !important;
+            -moz-appearance: textfield;
+        }
+        .counter-input::-webkit-outer-spin-button,
+        .counter-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
-        /* Action Buttons */
         .action-btn {
             width: 100%;
             margin-top: 10px;
@@ -135,35 +147,37 @@
             font-size: 1.2rem;
         }
         .btn-submit {
-            background-color: #FFD700 !important;
-            color: #000000 !important;
+            background-color: var(--yellow) !important;
+            color: var(--base) !important;
+            border-color: var(--yellow) !important;
         }
         .btn-submit:hover {
-            background-color: #ffffff !important;
+            background-color: var(--text) !important;
+            border-color: var(--text) !important;
         }
         .btn-reset {
-            border-color: #ff3333 !important;
-            color: #ff3333 !important;
+            background-color: transparent !important;
+            border-color: var(--red) !important;
+            color: var(--red) !important;
         }
         .btn-reset:hover {
-            background-color: #ff3333 !important;
-            color: #ffffff !important;
+            background-color: var(--red) !important;
+            color: var(--base) !important;
         }
 
-        /* Modal / QR Code Display Overlay */
         #qrModal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.9) !important;
+            background-color: rgba(17, 17, 27, 0.9) !important;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
         
         .modal-content {
-            background-color: #0A192F !important;
-            border: 3px solid #FFD700 !important;
+            background-color: var(--mantle) !important;
+            border: 3px solid var(--blue) !important;
             border-radius: 12px;
             padding: 30px;
             text-align: center;
@@ -171,7 +185,6 @@
             max-width: 400px;
         }
 
-        /* CRITICAL: QR codes MUST have white backgrounds or scanners will fail */
         #qrcode {
             background-color: #ffffff !important; 
             padding: 15px;
@@ -183,7 +196,7 @@
 </head>
 <body>
 
-    <h1>FRC Scouting</h1>
+    <h1>FRC Scout Client</h1>
 
     <div class="section">
         <label>Scout Name:</label>
@@ -201,7 +214,7 @@
         <label style="text-align: center;">Auto Balls Scored</label>
         <div class="counter-container">
             <button class="counter-btn" onclick="updateCounter('auto', -1)">-</button>
-            <span class="counter-display" id="autoDisp">0</span>
+            <input type="number" class="counter-input" id="autoDisp" value="0" min="0" oninput="manualUpdate('auto', this.value)">
             <button class="counter-btn" onclick="updateCounter('auto', 1)">+</button>
         </div>
 
@@ -219,7 +232,7 @@
         <label style="text-align: center;">Teleop Balls Scored</label>
         <div class="counter-container">
             <button class="counter-btn" onclick="updateCounter('tele', -1)">-</button>
-            <span class="counter-display" id="teleDisp">0</span>
+            <input type="number" class="counter-input" id="teleDisp" value="0" min="0" oninput="manualUpdate('tele', this.value)">
             <button class="counter-btn" onclick="updateCounter('tele', 1)">+</button>
         </div>
 
@@ -234,11 +247,11 @@
 
     <div class="section">
         <h2>Post-Match</h2>
+        <label>Match Outcome</label>
         <div class="btn-group" id="outcomeGroup">
-            <button class="toggle-btn active" onclick="setGroupVal('outcomeGroup', 'None', 'outcome')">None</button>
+            <button class="toggle-btn active" onclick="setGroupVal('outcomeGroup', 'Tie', 'outcome')">Tie</button>
             <button class="toggle-btn" onclick="setGroupVal('outcomeGroup', 'Win', 'outcome')">Win</button>
             <button class="toggle-btn" onclick="setGroupVal('outcomeGroup', 'Loss', 'outcome')">Loss</button>
-            <button class="toggle-btn" onclick="setGroupVal('outcomeGroup', 'Tie', 'outcome')">Tie</button>
         </div>
 
         <div class="btn-group">
@@ -248,7 +261,7 @@
 
         <label>Notes (Keep it brief):</label>
         <textarea id="notes" rows="3" maxlength="100" oninput="document.getElementById('charCount').innerText = this.value.length + ' / 100'"></textarea>
-        <div style="text-align: right; color: #FFD700; font-size: 0.9rem;" id="charCount">0 / 100</div>
+        <div style="text-align: right; color: var(--subtext0); font-size: 0.9rem;" id="charCount">0 / 100</div>
     </div>
 
     <button class="action-btn btn-submit" onclick="generateQR()">📷 Generate QR Code</button>
@@ -256,20 +269,28 @@
 
     <div id="qrModal" onclick="this.style.display='none'">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h2>Scan Me</h2>
+            <h2 style="color: var(--yellow) !important;">Scan Me</h2>
             <div id="qrcode"></div>
             <button class="action-btn btn-submit" style="margin-top: 20px;" onclick="document.getElementById('qrModal').style.display='none'">Close</button>
         </div>
     </div>
 
     <script>
-        // State storage
-        let data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'None', defense: false, broke: false };
+        // State storage (Outcome defaults to Tie, Climbs to None)
+        let data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'Tie', defense: false, broke: false };
 
+        // Handle the + and - buttons
         function updateCounter(type, change) {
             data[type] += change;
             if (data[type] < 0) data[type] = 0; // Prevent negative scores
-            document.getElementById(type + 'Disp').innerText = data[type];
+            document.getElementById(type + 'Disp').value = data[type];
+        }
+
+        // Handle direct text input typing
+        function manualUpdate(type, value) {
+            let parsed = parseInt(value);
+            if (isNaN(parsed) || parsed < 0) parsed = 0;
+            data[type] = parsed;
         }
 
         function setGroupVal(groupId, value, stateKey) {
@@ -296,7 +317,6 @@
                 return;
             }
 
-            // Map data to the ultra-short JSON format your server expects
             let payload = {
                 m: parseInt(match),
                 t: parseInt(team),
@@ -316,7 +336,7 @@
                 text: JSON.stringify(payload),
                 width: 250, 
                 height: 250,
-                colorDark : "#000000",
+                colorDark : "#1e1e2e", 
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.L
             });
@@ -333,16 +353,16 @@
             document.getElementById('charCount').innerText = '0 / 100';
             
             // Reset state
-            data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'None', defense: false, broke: false };
+            data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'Tie', defense: false, broke: false };
             
             // Reset UI counters
-            document.getElementById('autoDisp').innerText = '0';
-            document.getElementById('teleDisp').innerText = '0';
+            document.getElementById('autoDisp').value = '0';
+            document.getElementById('teleDisp').value = '0';
             
             // Reset buttons
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             ['autoClimbGroup', 'endClimbGroup', 'outcomeGroup'].forEach(id => {
-                document.getElementById(id).children[0].classList.add('active'); // Set 'None' to active
+                document.getElementById(id).children[0].classList.add('active'); // Set default to active
             });
         }
     </script>

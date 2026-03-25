@@ -70,7 +70,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- SCANNER INTERFACE (NAVY & GOLD) ---
+# --- SCANNER INTERFACE (CATPPUCCIN MOCHA) ---
 SCANNER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -78,15 +78,15 @@ SCANNER_HTML = """
     <title>FRC Scanner</title>
     <script src="/html5-qrcode.min.js" type="text/javascript"></script>
     <style>
-        body { background: #000000; color: white; font-family: sans-serif; text-align: center; padding: 10px; }
+        body { background: #1e1e2e; color: #cdd6f4; font-family: sans-serif; text-align: center; padding: 10px; }
         .nav { margin-bottom: 30px; }
-        .nav a { color: #FFD700; margin: 0 10px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #FFD700; padding-bottom: 3px; transition: 0.3s; }
-        .nav a:hover { color: #ffffff; border-color: #ffffff; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border: 4px solid #001F3F; background: #0A192F; border-radius: 10px; }
-        .success-box { background: #0A192F; border: 2px solid #FFD700; padding: 20px; border-radius: 10px; margin-top: 20px; display: none; }
-        .btn { padding: 15px 30px; font-size: 1.2rem; border: 2px solid #FFD700; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; max-width: 300px; font-weight: bold; transition: 0.3s; }
-        .btn-primary { background: #001F3F; color: #FFD700; }
-        .btn-primary:hover { background: #FFD700; color: #001F3F; }
+        .nav a { color: #89b4fa; margin: 0 10px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #89b4fa; padding-bottom: 3px; transition: 0.3s; }
+        .nav a:hover { color: #f9e2af; border-color: #f9e2af; }
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; border: 4px solid #313244; background: #181825; border-radius: 10px; }
+        .success-box { background: #181825; border: 2px solid #a6e3a1; padding: 20px; border-radius: 10px; margin-top: 20px; display: none; }
+        .btn { padding: 15px 30px; font-size: 1.2rem; border: 2px solid #89b4fa; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; max-width: 300px; font-weight: bold; transition: 0.3s; }
+        .btn-primary { background: #313244; color: #89b4fa; }
+        .btn-primary:hover { background: #89b4fa; color: #1e1e2e; }
     </style>
 </head>
 <body>
@@ -96,14 +96,14 @@ SCANNER_HTML = """
     </div>
 
     <div id="reader"></div>
-    <div id="error-msg" style="color: #ff3333; display:none;">
+    <div id="error-msg" style="color: #f38ba8; display:none;">
         <h3>⚠️ MISSING FILE</h3>
         <p>Please ensure <b>html5-qrcode.min.js</b> is in the server folder.</p>
     </div>
 
     <div id="successDisplay" class="success-box">
-        <h2 style="margin:0 0 10px 0; color: #FFD700;">✅ Scan Successful!</h2>
-        <div id="scanDetails" style="font-size: 1.2rem; margin-bottom: 15px; color: #ffffff;"></div>
+        <h2 style="margin:0 0 10px 0; color: #a6e3a1;">✅ Scan Successful!</h2>
+        <div id="scanDetails" style="font-size: 1.2rem; margin-bottom: 15px; color: #cdd6f4;"></div>
         <button class="btn btn-primary" onclick="submitToDb()">💾 Save to Database</button>
     </div>
 
@@ -165,24 +165,24 @@ SCANNER_HTML = """
 </html>
 """
 
-# --- DASHBOARD HTML (NAVY & GOLD) ---
+# --- DASHBOARD HTML (CATPPUCCIN MOCHA) ---
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>FRC Data</title>
     <style>
-        body { background: #000000; color: white; font-family: sans-serif; padding: 20px; }
+        body { background: #1e1e2e; color: #cdd6f4; font-family: sans-serif; padding: 20px; }
         .nav { margin-bottom: 30px; text-align: center; }
-        .nav a { color: #FFD700; margin: 0 15px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #FFD700; padding-bottom: 3px; transition: 0.3s; }
-        .nav a:hover { color: #ffffff; border-color: #ffffff; }
-        table { width: 100%; border-collapse: collapse; background: #0A192F; border: 1px solid #FFD700; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #001F3F; }
-        th { background: #001F3F; color: #FFD700; border-bottom: 2px solid #FFD700; }
-        .btn-ods { background: #001F3F; color: #FFD700; border: 2px solid #FFD700; padding: 10px 15px; text-decoration: none; border-radius: 5px; display:inline-block; margin-bottom:20px; font-weight: bold; transition: 0.3s; }
-        .btn-ods:hover { background: #FFD700; color: #001F3F; }
-        .btn-del { background: #cc0000; color: white; border: 1px solid #ff4d4d; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .btn-del:hover { background: #ff3333; }
+        .nav a { color: #89b4fa; margin: 0 15px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #89b4fa; padding-bottom: 3px; transition: 0.3s; }
+        .nav a:hover { color: #f9e2af; border-color: #f9e2af; }
+        table { width: 100%; border-collapse: collapse; background: #181825; border: 1px solid #313244; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #313244; }
+        th { background: #313244; color: #89b4fa; border-bottom: 2px solid #89b4fa; }
+        .btn-ods { background: #313244; color: #89b4fa; border: 2px solid #89b4fa; padding: 10px 15px; text-decoration: none; border-radius: 5px; display:inline-block; margin-bottom:20px; font-weight: bold; transition: 0.3s; }
+        .btn-ods:hover { background: #89b4fa; color: #1e1e2e; }
+        .btn-del { background: transparent; color: #f38ba8; border: 1px solid #f38ba8; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.3s;}
+        .btn-del:hover { background: #f38ba8; color: #1e1e2e;}
     </style>
 </head>
 <body>
