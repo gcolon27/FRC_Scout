@@ -23,7 +23,7 @@ except ImportError:
     missing_modules.append('pandas')
 
 try:
-    import odf # This is the internal name for odfpy
+    import odf
 except ImportError:
     missing_modules.append('odfpy')
 
@@ -35,7 +35,6 @@ if missing_modules:
     print(f"👉  pip install {' '.join(missing_modules)}\n")
     sys.exit(1)
 
-# --- Safe to import everything else now ---
 import sqlite3
 import json
 import logging
@@ -71,7 +70,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- SCANNER INTERFACE (OFFLINE) ---
+# --- SCANNER INTERFACE (NAVY & GOLD) ---
 SCANNER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -79,13 +78,15 @@ SCANNER_HTML = """
     <title>FRC Scanner</title>
     <script src="/html5-qrcode.min.js" type="text/javascript"></script>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; padding: 10px; }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #00ccff; margin: 0 10px; text-decoration: none; font-size: 1.2rem; border-bottom: 1px solid #00ccff; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border: 4px solid #333; border-radius: 10px; }
-        .success-box { background: #004d26; border: 2px solid #00d968; padding: 20px; border-radius: 10px; margin-top: 20px; display: none; }
-        .btn { padding: 15px 30px; font-size: 1.2rem; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; max-width: 300px; }
-        .btn-primary { background: #0066cc; color: white; }
+        body { background: #000000; color: white; font-family: sans-serif; text-align: center; padding: 10px; }
+        .nav { margin-bottom: 30px; }
+        .nav a { color: #FFD700; margin: 0 10px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #FFD700; padding-bottom: 3px; transition: 0.3s; }
+        .nav a:hover { color: #ffffff; border-color: #ffffff; }
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; border: 4px solid #001F3F; background: #0A192F; border-radius: 10px; }
+        .success-box { background: #0A192F; border: 2px solid #FFD700; padding: 20px; border-radius: 10px; margin-top: 20px; display: none; }
+        .btn { padding: 15px 30px; font-size: 1.2rem; border: 2px solid #FFD700; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; max-width: 300px; font-weight: bold; transition: 0.3s; }
+        .btn-primary { background: #001F3F; color: #FFD700; }
+        .btn-primary:hover { background: #FFD700; color: #001F3F; }
     </style>
 </head>
 <body>
@@ -95,14 +96,14 @@ SCANNER_HTML = """
     </div>
 
     <div id="reader"></div>
-    <div id="error-msg" style="color: red; display:none;">
+    <div id="error-msg" style="color: #ff3333; display:none;">
         <h3>⚠️ MISSING FILE</h3>
         <p>Please ensure <b>html5-qrcode.min.js</b> is in the server folder.</p>
     </div>
 
     <div id="successDisplay" class="success-box">
-        <h2 style="margin:0 0 10px 0;">✅ Scan Successful!</h2>
-        <div id="scanDetails" style="font-size: 1.2rem; margin-bottom: 15px; color: #ccffdd;"></div>
+        <h2 style="margin:0 0 10px 0; color: #FFD700;">✅ Scan Successful!</h2>
+        <div id="scanDetails" style="font-size: 1.2rem; margin-bottom: 15px; color: #ffffff;"></div>
         <button class="btn btn-primary" onclick="submitToDb()">💾 Save to Database</button>
     </div>
 
@@ -164,21 +165,24 @@ SCANNER_HTML = """
 </html>
 """
 
-# --- DASHBOARD HTML ---
+# --- DASHBOARD HTML (NAVY & GOLD) ---
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>FRC Data</title>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; }
+        body { background: #000000; color: white; font-family: sans-serif; padding: 20px; }
         .nav { margin-bottom: 30px; text-align: center; }
-        .nav a { color: #00ccff; margin: 0 15px; text-decoration: none; font-size: 1.2rem; border-bottom: 1px solid #00ccff; }
-        table { width: 100%; border-collapse: collapse; background: #2a2a2a; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; }
-        th { background: #333; color: #00ccff; }
-        .btn-ods { background: #00a854; color: white; padding: 10px; text-decoration: none; border-radius: 5px; display:inline-block; margin-bottom:20px;}
-        .btn-del { background: #ff3333; color: white; border: none; padding: 5px; cursor: pointer; }
+        .nav a { color: #FFD700; margin: 0 15px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #FFD700; padding-bottom: 3px; transition: 0.3s; }
+        .nav a:hover { color: #ffffff; border-color: #ffffff; }
+        table { width: 100%; border-collapse: collapse; background: #0A192F; border: 1px solid #FFD700; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #001F3F; }
+        th { background: #001F3F; color: #FFD700; border-bottom: 2px solid #FFD700; }
+        .btn-ods { background: #001F3F; color: #FFD700; border: 2px solid #FFD700; padding: 10px 15px; text-decoration: none; border-radius: 5px; display:inline-block; margin-bottom:20px; font-weight: bold; transition: 0.3s; }
+        .btn-ods:hover { background: #FFD700; color: #001F3F; }
+        .btn-del { background: #cc0000; color: white; border: 1px solid #ff4d4d; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-del:hover { background: #ff3333; }
     </style>
 </head>
 <body>
@@ -269,7 +273,6 @@ def view_data():
 def submit():
     try:
         data = request.json
-        
         utc_now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         data['scan_time_utc'] = utc_now
 
@@ -289,10 +292,8 @@ def submit():
         conn.commit()
         conn.close()
         
-        # --- CUSTOM TERMINAL LOG ---
         scout_name = data.get('scoutName', 'Unknown')
         print(f"✅ {scout_name} submitted a scan at {utc_now}")
-        
         return jsonify({'success': True, 'timestamp': utc_now})
     except Exception as e:
         print(f"❌ SERVER ERROR: {str(e)}")
@@ -346,9 +347,6 @@ def export_ods():
     )
 
 if __name__ == '__main__':
-    # ==========================================================
-    # PRE-FLIGHT CHECK 2: Scanner Javascript File
-    # ==========================================================
     if not os.path.exists('html5-qrcode.min.js'):
         print("\n" + "!"*55)
         print("🛑 SERVER STARTUP FAILED: Missing Scanner File")
@@ -357,7 +355,6 @@ if __name__ == '__main__':
         print("👉 Please download it and place it in the SAME folder as this script.\n")
         sys.exit(1)
 
-    # Initialize the database and boot the server
     init_db()
     
     print("\n" + "="*50)
@@ -365,5 +362,4 @@ if __name__ == '__main__':
     print("🛑 Press CTRL+C to quit")
     print("="*50 + "\n")
     
-    # Port changed to 8000 here to avoid macOS AirPlay conflict
     app.run(host='0.0.0.0', port=8000, debug=False)
