@@ -276,17 +276,19 @@
     </div>
 
     <script>
-        // State storage (Outcome defaults to Tie, Climbs to None)
+        // ==========================================
+        // DEVICE ID (CHANGE THIS FOR EACH TABLET)
+        // ==========================================
+        const DEVICE_ID = "Tablet_1"; 
+        
         let data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'Tie', defense: false, broke: false };
 
-        // Handle the + and - buttons
         function updateCounter(type, change) {
             data[type] += change;
-            if (data[type] < 0) data[type] = 0; // Prevent negative scores
+            if (data[type] < 0) data[type] = 0; 
             document.getElementById(type + 'Disp').value = data[type];
         }
 
-        // Handle direct text input typing
         function manualUpdate(type, value) {
             let parsed = parseInt(value);
             if (isNaN(parsed) || parsed < 0) parsed = 0;
@@ -318,6 +320,7 @@
             }
 
             let payload = {
+                dev: DEVICE_ID, // <-- Hidden Device ID sent to server
                 m: parseInt(match),
                 t: parseInt(team),
                 s: scout,
@@ -346,23 +349,19 @@
         function resetForm() {
             if(!confirm("Clear data? (Scout name will stay)")) return;
             
-            // Clear text inputs
             document.getElementById('match').value = '';
             document.getElementById('team').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('charCount').innerText = '0 / 100';
             
-            // Reset state
             data = { auto: 0, tele: 0, autoClimb: 'None', endClimb: 'None', outcome: 'Tie', defense: false, broke: false };
             
-            // Reset UI counters
             document.getElementById('autoDisp').value = '0';
             document.getElementById('teleDisp').value = '0';
             
-            // Reset buttons
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             ['autoClimbGroup', 'endClimbGroup', 'outcomeGroup'].forEach(id => {
-                document.getElementById(id).children[0].classList.add('active'); // Set default to active
+                document.getElementById(id).children[0].classList.add('active'); 
             });
         }
     </script>
