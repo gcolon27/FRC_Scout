@@ -69,17 +69,15 @@ def init_db():
         )
     ''')
     
-    # Safely migrate older databases to include device_id tracking
     try:
         c.execute("ALTER TABLE matches ADD COLUMN device_id TEXT")
     except sqlite3.OperationalError:
-        pass # Column already exists
+        pass 
         
     conn.commit()
     conn.close()
 
 def parse_match_data(row):
-    """Parses SQL rows and normalizes short/long JSON keys from legacy and new clients."""
     db_id, raw_json, scan_time, device_id = row
     try:
         d = json.loads(raw_json)
@@ -112,14 +110,29 @@ SCANNER_HTML = """
     <script src="/html5-qrcode.min.js" type="text/javascript"></script>
     <style>
         body { background: #1e1e2e; color: #cdd6f4; font-family: sans-serif; text-align: center; padding: 10px; }
-        .nav { margin-bottom: 30px; }
-        .nav a { color: #89b4fa; margin: 0 10px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #89b4fa; padding-bottom: 3px; transition: 0.3s; }
+        
+        .nav { margin-bottom: 30px; display: flex; justify-content: center; gap: 20px; }
+        .nav a { color: #89b4fa; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid #89b4fa; padding-bottom: 3px; transition: 0.3s; }
         .nav a:hover { color: #f9e2af; border-color: #f9e2af; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border: 4px solid #313244; background: #181825; border-radius: 10px; }
+        
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; border: 2px solid #89b4fa; background: #181825; border-radius: 10px; overflow: hidden; padding-bottom: 15px;}
+        
+        /* Styled the native 'Scan an Image File' link so it looks good in dark mode */
+        #reader a { color: #89b4fa; text-decoration: none; font-weight: bold; font-size: 1.1rem; }
+        #reader a:hover { color: #f9e2af; }
+        
         .success-box { background: #181825; border: 2px solid #a6e3a1; padding: 20px; border-radius: 10px; margin-top: 20px; display: none; }
         .btn { padding: 15px 30px; font-size: 1.2rem; border: 2px solid #89b4fa; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; max-width: 300px; font-weight: bold; transition: 0.3s; }
         .btn-primary { background: #313244; color: #89b4fa; }
         .btn-primary:hover { background: #89b4fa; color: #1e1e2e; }
+        
+        /* Mode Selector Styles */
+        .mode-btn { background: #181825; color: #cdd6f4; border: 2px solid #313244; padding: 10px 15px; font-size: 1rem; cursor: pointer; border-radius: 6px; margin: 5px; transition: 0.3s; }
+        .mode-btn.active { background: #89b4fa; color: #1e1e2e; border-color: #89b4fa; font-weight: bold; }
+        .mode-btn:hover { border-color: #89b4fa; }
+        
+        #usb-input { width: 100%; max-width: 500px; padding: 15px; font-size: 1.2rem; background: #313244; color: #cdd6f4; border: 2px solid #89b4fa; border-radius: 8px; box-sizing: border-box; outline: none; }
+        #usb-input:focus { box-shadow: 0 0 8px #89b4fa; }
     </style>
 </head>
 <body>
@@ -128,7 +141,18 @@ SCANNER_HTML = """
         <a href="/view">📊 View Data</a>
     </div>
 
+    <div id="mode-selector" style="margin-bottom: 20px;">
+        <button id="btn-camera" class="mode-btn active" onclick="setMode('camera')">📷 Camera / File</button>
+        <button id="btn-usb" class="mode-btn" onclick="setMode('usb')">⌨️ USB Scanner</button>
+    </div>
+
     <div id="reader"></div>
+
+    <div id="usb-container" style="display: none; margin-bottom: 20px;">
+        <p style="color: #89b4fa; font-weight: bold; margin-bottom: 10px;">Click the box below and scan your code</p>
+        <input type="text" id="usb-input" placeholder="Awaiting scan..." autocomplete="off">
+    </div>
+
     <div id="error-msg" style="color: #f38ba8; display:none;">
         <h3>⚠️ MISSING FILE</h3>
         <p>Please ensure <b>html5-qrcode.min.js</b> is in the server folder.</p>
@@ -142,38 +166,97 @@ SCANNER_HTML = """
 
     <script>
         let currentData = null;
-        try {
-            let scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        let scanner = null;
+        let currentMode = localStorage.getItem('scannerMode') || 'camera';
 
-            function onScan(decodedText) {
-                try {
-                    let raw = JSON.parse(decodedText);
-                    currentData = {
-                        deviceId: raw.dev || 'Unknown',
-                        matchNumber: raw.m,
-                        teamNumber: raw.t,
-                        scoutName: raw.s || 'Unknown',
-                        autoBalls: raw.ab || 0,
-                        autoClimb: raw.ac || 'None',
-                        teleBalls: raw.tb || 0,
-                        endClimb: raw.ec || 'None',
-                        outcome: raw.o || 'Tie',
-                        defense: raw.df === 1 ? 'Yes' : 'No',
-                        broken: raw.br === 1 ? 'Yes' : 'No',
-                        notes: raw.n || ''
-                    };
-
-                    document.getElementById('scanDetails').innerHTML =
-                        `Match <strong>${currentData.matchNumber}</strong> - Team <strong>${currentData.teamNumber}</strong><br>` +
-                        `Scout: ${currentData.scoutName}`;
-
-                    document.getElementById('successDisplay').style.display = 'block';
-                    document.getElementById('reader').style.display = 'none';
-                    scanner.pause();
-
-                } catch(e) { console.error("Parse error", e); }
+        function setMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('scannerMode', mode);
+            
+            document.getElementById('btn-camera').classList.remove('active');
+            document.getElementById('btn-usb').classList.remove('active');
+            
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('usb-container').style.display = 'none';
+            
+            if (mode === 'camera') {
+                document.getElementById('reader').style.display = 'block';
+                document.getElementById('btn-camera').classList.add('active');
+            } else if (mode === 'usb') {
+                document.getElementById('usb-container').style.display = 'block';
+                document.getElementById('btn-usb').classList.add('active');
+                document.getElementById('usb-input').value = '';
+                document.getElementById('usb-input').focus();
             }
-            scanner.render(onScan);
+        }
+
+        function handleValidData(raw) {
+            currentData = {
+                deviceId: raw.dev || 'Unknown',
+                matchNumber: raw.m,
+                teamNumber: raw.t,
+                scoutName: raw.s || 'Unknown',
+                autoBalls: raw.ab || 0,
+                autoClimb: raw.ac || 'None',
+                teleBalls: raw.tb || 0,
+                endClimb: raw.ec || 'None',
+                outcome: raw.o || 'Tie',
+                defense: raw.df === 1 ? 'Yes' : 'No',
+                broken: raw.br === 1 ? 'Yes' : 'No',
+                notes: raw.n || ''
+            };
+
+            document.getElementById('scanDetails').innerHTML =
+                `Match <strong>${currentData.matchNumber}</strong> - Team <strong>${currentData.teamNumber}</strong><br>` +
+                `Scout: ${currentData.scoutName}`;
+
+            document.getElementById('successDisplay').style.display = 'block';
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('usb-container').style.display = 'none';
+            document.getElementById('mode-selector').style.display = 'none';
+            
+            try {
+                if (scanner && scanner.getState() === 2) {
+                    scanner.pause();
+                }
+            } catch(e) { }
+        }
+
+        function processCameraScan(decodedText) {
+            try {
+                let raw = JSON.parse(decodedText);
+                handleValidData(raw);
+            } catch(e) { 
+                // Silently ignore invalid parses from camera.
+            }
+        }
+
+        document.getElementById('usb-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                let val = this.value.trim();
+                if(val !== '') {
+                    let raw = null;
+                    try {
+                        raw = JSON.parse(val);
+                    } catch(err) {
+                        alert("❌ Invalid QR Data received from USB Scanner.");
+                        this.value = ''; 
+                        return;
+                    }
+                    this.value = ''; 
+                    handleValidData(raw); 
+                }
+            }
+        });
+
+        // Initialize Native Scanner (This re-enables the built-in file uploader!)
+        try {
+            scanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: 250
+            });
+            scanner.render(processCameraScan);
         } catch(e) {
             document.getElementById('error-msg').style.display = 'block';
             document.getElementById('reader').style.display = 'none';
@@ -187,13 +270,15 @@ SCANNER_HTML = """
                     body: JSON.stringify(currentData)
                 });
                 if(res.ok) {
-                    alert("✅ Saved!");
-                    location.reload();
+                    location.reload(); 
                 } else {
                     alert("❌ Error saving");
                 }
             } catch(e) { alert("❌ Network Error"); }
         }
+
+        // Apply saved mode on load
+        setTimeout(() => setMode(currentMode), 100);
     </script>
 </body>
 </html>
@@ -212,8 +297,9 @@ DASHBOARD_HTML = """
             --red: #f38ba8; --green: #a6e3a1; --subtext0: #a6adc8;
         }
         body { background: var(--base); color: var(--text); font-family: sans-serif; padding: 20px; }
-        .nav { margin-bottom: 30px; text-align: center; }
-        .nav a { color: var(--blue); margin: 0 15px; text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid var(--blue); padding-bottom: 3px; transition: 0.3s; }
+        
+        .nav { margin-bottom: 30px; display: flex; justify-content: center; gap: 20px; }
+        .nav a { color: var(--blue); text-decoration: none; font-size: 1.2rem; border-bottom: 2px solid var(--blue); padding-bottom: 3px; transition: 0.3s; }
         .nav a:hover { color: var(--yellow); border-color: var(--yellow); }
         
         table { width: 100%; border-collapse: collapse; background: var(--mantle); border: 1px solid var(--surface0); }
@@ -510,7 +596,6 @@ def edit_match(match_id):
         raw_json, scan_time, device_id = row
         existing = json.loads(raw_json) if raw_json else {}
         
-        # Inject new values using the short-keys to keep DB consistency with the scanner payload
         existing['m'] = int(data['matchNumber'])
         existing['t'] = int(data['teamNumber'])
         existing['s'] = data['scoutName']
@@ -523,7 +608,6 @@ def edit_match(match_id):
         existing['br'] = 1 if data['broken'] == 'Yes' else 0
         existing['n'] = data['notes']
         
-        # Preserve original metadata inside the JSON blob
         if 'scan_time_utc' not in existing: existing['scan_time_utc'] = scan_time
         if 'dev' not in existing: existing['dev'] = device_id
         
